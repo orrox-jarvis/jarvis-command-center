@@ -69,7 +69,7 @@ export default function VoiceStudio() {
       const res = await fetch(`${STUDIO_URL}/synthesize_design`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: designText, instruct: designInstruct, language: 'en' }),
+        body: JSON.stringify({ text: designText, instruct: designInstruct, language: 'english' }),
       });
       if (!res.ok) throw new Error(await res.text());
       const blob = await res.blob();
@@ -117,7 +117,7 @@ export default function VoiceStudio() {
       const fd = new FormData();
       fd.append('text', cloneText);
       fd.append('ref_text', cloneRefText);
-      fd.append('language', 'en');
+      fd.append('language', 'english');
       fd.append('audio', audioFile);
       const res = await fetch(`${STUDIO_URL}/clone_voice`, { method: 'POST', body: fd });
       if (!res.ok) throw new Error(await res.text());
