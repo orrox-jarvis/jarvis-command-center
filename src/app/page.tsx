@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Activity, Cpu, Radio, ShieldCheck, RefreshCw, Mic, Zap, Brain, Settings, RotateCcw } from 'lucide-react';
+import { Activity, Cpu, Radio, ShieldCheck, RefreshCw, Mic, Zap, Brain, Settings, RotateCcw, LogOut } from 'lucide-react';
 import { api } from '@/lib/api';
+import { createClient } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 function GpuBar({ used, total, name }: { used: number; total: number; name: string }) {
   const pct = Math.round((used / total) * 100);
@@ -43,6 +45,13 @@ export default function Dashboard() {
   const [envKey, setEnvKey] = useState('');
   const [envVal, setEnvVal] = useState('');
   const [envMsg, setEnvMsg] = useState('');
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
   const refresh = useCallback(async () => {
     try {
@@ -98,6 +107,11 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold tracking-tighter">JARVIS COMMAND CENTER</h1>
             <p className="text-xs text-zinc-500 mt-0.5">dataintellagents.com</p>
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={handleSignOut} className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-zinc-800">
+            <LogOut size={14} /> Sign out
+          </button>
         </div>
         <button onClick={refresh} className="p-2 rounded-full hover:bg-zinc-900 transition-colors text-zinc-400 hover:text-white">
           <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
