@@ -251,7 +251,24 @@ export default function Dashboard() {
 
       </div>
 
-      <p className="text-center text-xs text-zinc-700 mt-10">
+      {/* Voice Studio Link */}
+      <div className="mt-6">
+        <a
+          href="/studio"
+          className="flex items-center gap-3 p-5 bg-zinc-900 border border-purple-900/50 hover:border-purple-700 rounded-2xl transition-all group"
+        >
+          <div className="p-2 bg-purple-900/30 rounded-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-purple-300">Voice Studio</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Design, clone &amp; apply custom voices to Jarvis — phone &amp; voice calls</p>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto text-zinc-600 group-hover:text-zinc-400 transition-colors"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+      </div>
+
+      <p className="text-center text-xs text-zinc-700 mt-8">
         Jarvis Command Center · {new Date().toLocaleString()}
       </p>
     </main>
