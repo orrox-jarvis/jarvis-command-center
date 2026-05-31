@@ -265,8 +265,25 @@ export default function Dashboard() {
 
       </div>
 
-      {/* Voice Studio Link */}
-      <div className="mt-6">
+      {/* Quick links */}
+      <div className="mt-6 grid grid-cols-1 gap-3">
+
+        {/* GPU1 Smart Model */}
+        <a
+          href="/models"
+          className="flex items-center gap-3 p-5 bg-zinc-900 border border-indigo-900/50 hover:border-indigo-700 rounded-2xl transition-all group"
+        >
+          <div className="p-2 bg-indigo-900/30 rounded-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" x2="9" y1="2" y2="4"/><line x1="15" x2="15" y1="2" y2="4"/><line x1="9" x2="9" y1="20" y2="22"/><line x1="15" x2="15" y1="20" y2="22"/><line x1="2" x2="4" y1="9" y2="9"/><line x1="2" x2="4" y1="15" y2="15"/><line x1="20" x2="22" y1="9" y2="9"/><line x1="20" x2="22" y1="15" y2="15"/></svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-indigo-300">GPU1 Smart Model</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Hot-swap Gemma 4 26B ↔ Qwen 3.6 27B · crash recovery · port 8081</p>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto text-zinc-600 group-hover:text-zinc-400 transition-colors"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+
+        {/* Voice Studio Link */}
         <a
           href="/studio"
           className="flex items-center gap-3 p-5 bg-zinc-900 border border-purple-900/50 hover:border-purple-700 rounded-2xl transition-all group"
