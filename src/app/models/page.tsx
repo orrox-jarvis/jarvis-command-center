@@ -208,6 +208,7 @@ export default function ModelsPage() {
   const [status, setStatus] = useState<Gpu1Status | null>(null);
   const [swapping, setSwapping] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [showLogs, setShowLogs] = useState(false);
 
@@ -261,6 +262,19 @@ export default function ModelsPage() {
       showToast(`Restart failed: ${e instanceof Error ? e.message : String(e)}`, false);
     } finally {
       setRestarting(false);
+    }
+  };
+
+  const handleStop = async () => {
+    setStopping(true);
+    try {
+      await apiFetch('/control/gpu1_stop', { method: 'POST' });
+      showToast('Service stopped — systemd will auto-restart if Restart=on-failure is set', true);
+      setTimeout(fetchStatus, 3000);
+    } catch (e: unknown) {
+      showToast(`Stop failed: ${e instanceof Error ? e.message : String(e)}`, false);
+    } finally {
+      setStopping(false);
     }
   };
 
@@ -333,16 +347,29 @@ export default function ModelsPage() {
 
         {/* Crash recovery */}
         <div className="mb-8 p-5 bg-gray-900 border border-gray-700 rounded-xl">
-          <h3 className="text-white font-semibold mb-1">Crash Recovery</h3>
+          <h3 className="text-white font-semibold mb-1">Service Control & Testing</h3>
           <p className="text-gray-400 text-sm mb-4">
-            If the model crashes and systemd has stopped retrying (5 crashes in 3 minutes),
-            or if a zombie process is holding port 8081, use this to force a clean restart.
-            This kills any process on port 8081, clears the lock, and starts fresh.
+            <strong className="text-gray-300">Kill Service</strong> stops the model cleanly via systemd
+            (same as a crash for testing purposes — systemd will auto-restart it after ~10s via{' '}
+            <code className="bg-black/30 px-1 rounded">Restart=on-failure</code>).{' '}
+            <strong className="text-gray-300">Force Restart</strong> kills any zombie on port 8081 and
+            starts fresh — use this if systemd gave up after 5 crashes in 3 minutes.
           </p>
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={handleStop}
+              disabled={stopping || restarting}
+              className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all
+                ${stopping
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  : 'bg-red-800 hover:bg-red-700 text-white cursor-pointer'
+                }`}
+            >
+              {stopping ? 'Stopping…' : '⏹ Kill Service'}
+            </button>
             <button
               onClick={handleRestart}
-              disabled={restarting}
+              disabled={restarting || stopping}
               className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all
                 ${restarting
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
@@ -352,7 +379,7 @@ export default function ModelsPage() {
               {restarting ? 'Restarting…' : '⚡ Force Restart GPU1 Model'}
             </button>
             <div className="text-xs text-gray-500">
-              Current model after restart:{' '}
+              Model after restart:{' '}
               <span className="text-gray-300 font-medium">
                 {MODEL_INFO[activeModel]?.name ?? activeModel}
               </span>
