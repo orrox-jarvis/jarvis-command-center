@@ -149,7 +149,8 @@ export default function VoiceChat() {
       }
 
       // ── WebSocket ──────────────────────────────────────────────────────
-      const ws = new WebSocket(process.env.NEXT_PUBLIC_VOICE_GATEWAY_URL!)
+      const wsUrl = process.env.NEXT_PUBLIC_VOICE_GATEWAY_URL || 'wss://voice.dataintellagents.com/media'
+      const ws = new WebSocket(wsUrl)
       wsRef.current = ws
 
       ws.onopen = () => {
