@@ -283,6 +283,21 @@ export default function Dashboard() {
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto text-zinc-600 group-hover:text-zinc-400 transition-colors"><path d="m9 18 6-6-6-6"/></svg>
         </a>
 
+        {/* GPU0 Services */}
+        <a
+          href="/gpu0"
+          className="flex items-center gap-3 p-5 bg-zinc-900 border border-emerald-900/50 hover:border-emerald-700 rounded-2xl transition-all group"
+        >
+          <div className="p-2 bg-emerald-900/30 rounded-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-emerald-300">GPU0 Services</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Fast LLM · TTS Router · Voice models · restart / stop / logs</p>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto text-zinc-600 group-hover:text-zinc-400 transition-colors"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+
         {/* Voice Studio Link */}
         <a
           href="/studio"
