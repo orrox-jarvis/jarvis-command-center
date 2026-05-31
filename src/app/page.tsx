@@ -268,6 +268,21 @@ export default function Dashboard() {
       {/* Quick links */}
       <div className="mt-6 grid grid-cols-1 gap-3">
 
+        {/* Voice Assistant */}
+        <a
+          href="/voice"
+          className="flex items-center gap-3 p-5 bg-zinc-900 border border-rose-900/50 hover:border-rose-700 rounded-2xl transition-all group"
+        >
+          <div className="p-2 bg-rose-900/30 rounded-xl">
+            <Mic size={20} className="text-rose-400" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-rose-300">Voice Assistant</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Talk to Jarvis directly — real-time voice via browser WebSocket</p>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto text-zinc-600 group-hover:text-zinc-400 transition-colors"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+
         {/* GPU1 Smart Model */}
         <a
           href="/models"
