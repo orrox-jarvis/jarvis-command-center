@@ -209,6 +209,7 @@ export default function ModelsPage() {
   const [swapping, setSwapping] = useState(false);
   const [restarting, setRestarting] = useState(false);
   const [stopping, setStopping] = useState(false);
+  const [crashing, setCrashing] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [showLogs, setShowLogs] = useState(false);
 
@@ -269,12 +270,25 @@ export default function ModelsPage() {
     setStopping(true);
     try {
       await apiFetch('/control/gpu1_stop', { method: 'POST' });
-      showToast('Service stopped — systemd will auto-restart if Restart=on-failure is set', true);
+      showToast('Service stopped cleanly — no auto-restart (use Simulate Crash to test that)', true);
       setTimeout(fetchStatus, 3000);
     } catch (e: unknown) {
       showToast(`Stop failed: ${e instanceof Error ? e.message : String(e)}`, false);
     } finally {
       setStopping(false);
+    }
+  };
+
+  const handleCrashTest = async () => {
+    setCrashing(true);
+    try {
+      const res = await apiFetch('/control/gpu1_crash_test', { method: 'POST' });
+      showToast(res.message || 'Process killed — watch for auto-restart in ~10s', true);
+      setTimeout(fetchStatus, 12000);
+    } catch (e: unknown) {
+      showToast(`Crash test failed: ${e instanceof Error ? e.message : String(e)}`, false);
+    } finally {
+      setCrashing(false);
     }
   };
 
@@ -349,34 +363,46 @@ export default function ModelsPage() {
         <div className="mb-8 p-5 bg-gray-900 border border-gray-700 rounded-xl">
           <h3 className="text-white font-semibold mb-1">Service Control & Testing</h3>
           <p className="text-gray-400 text-sm mb-4">
-            <strong className="text-gray-300">Kill Service</strong> stops the model cleanly via systemd
-            (same as a crash for testing purposes — systemd will auto-restart it after ~10s via{' '}
-            <code className="bg-black/30 px-1 rounded">Restart=on-failure</code>).{' '}
-            <strong className="text-gray-300">Force Restart</strong> kills any zombie on port 8081 and
-            starts fresh — use this if systemd gave up after 5 crashes in 3 minutes.
+            <strong className="text-gray-300">Simulate Crash</strong> sends SIGKILL directly to the process —
+            systemd sees it as a non-zero exit and auto-restarts via{' '}
+            <code className="bg-black/30 px-1 rounded">Restart=on-failure</code> after ~10s.{' '}
+            <strong className="text-gray-300">Stop</strong> does a clean systemd stop (no auto-restart).{' '}
+            <strong className="text-gray-300">Force Restart</strong> clears any zombie on 8081 and starts fresh —
+            use this if systemd gave up after 5 crashes in 3 minutes.
           </p>
           <div className="flex items-center gap-3 flex-wrap">
             <button
+              onClick={handleCrashTest}
+              disabled={crashing || stopping || restarting}
+              className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all
+                ${crashing
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  : 'bg-red-700 hover:bg-red-600 text-white cursor-pointer'
+                }`}
+            >
+              {crashing ? 'Killing…' : '💥 Simulate Crash'}
+            </button>
+            <button
               onClick={handleStop}
-              disabled={stopping || restarting}
+              disabled={stopping || crashing || restarting}
               className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all
                 ${stopping
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                  : 'bg-red-800 hover:bg-red-700 text-white cursor-pointer'
+                  : 'bg-gray-700 hover:bg-gray-600 text-white cursor-pointer'
                 }`}
             >
-              {stopping ? 'Stopping…' : '⏹ Kill Service'}
+              {stopping ? 'Stopping…' : '⏹ Stop'}
             </button>
             <button
               onClick={handleRestart}
-              disabled={restarting || stopping}
+              disabled={restarting || stopping || crashing}
               className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all
                 ${restarting
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   : 'bg-orange-700 hover:bg-orange-600 text-white cursor-pointer'
                 }`}
             >
-              {restarting ? 'Restarting…' : '⚡ Force Restart GPU1 Model'}
+              {restarting ? 'Restarting…' : '⚡ Force Restart'}
             </button>
             <div className="text-xs text-gray-500">
               Model after restart:{' '}
