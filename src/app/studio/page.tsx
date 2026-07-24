@@ -1,9 +1,13 @@
 'use client';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { Mic, Wand2, Upload, Play, Save, Check, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 const STUDIO_URL = process.env.NEXT_PUBLIC_STUDIO_URL ?? 'https://studio.dataintellagents.com';
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 // Voice preset descriptions for quick selection
 const VOICE_PRESETS = [
@@ -74,8 +78,8 @@ export default function VoiceStudio() {
       if (!res.ok) throw new Error(await res.text());
       const blob = await res.blob();
       setDesignAudio(URL.createObjectURL(blob));
-    } catch (e: any) {
-      setDesignErr(e.message);
+    } catch (e: unknown) {
+      setDesignErr(errorMessage(e));
     } finally {
       setDesigning(false);
     }
@@ -97,8 +101,8 @@ export default function VoiceStudio() {
       mr.start();
       mediaRef.current = mr;
       setRecording(true);
-    } catch (e: any) {
-      setCloneErr('Microphone access denied: ' + e.message);
+    } catch (e: unknown) {
+      setCloneErr('Microphone access denied: ' + errorMessage(e));
     }
   };
 
@@ -123,8 +127,8 @@ export default function VoiceStudio() {
       if (!res.ok) throw new Error(await res.text());
       const blob = await res.blob();
       setCloneAudio(URL.createObjectURL(blob));
-    } catch (e: any) {
-      setCloneErr(e.message);
+    } catch (e: unknown) {
+      setCloneErr(errorMessage(e));
     } finally {
       setCloning(false);
     }
@@ -144,8 +148,8 @@ export default function VoiceStudio() {
       if (!res.ok) throw new Error(await res.text());
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (e: any) {
-      setCloneErr(e.message);
+    } catch (e: unknown) {
+      setCloneErr(errorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -169,10 +173,10 @@ export default function VoiceStudio() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-8">
-        {[{ id: 'design', label: 'Voice Design', icon: Wand2 }, { id: 'clone', label: 'Voice Clone', icon: Mic }].map(t => (
+        {([ { id: 'design', label: 'Voice Design', icon: Wand2 }, { id: 'clone', label: 'Voice Clone', icon: Mic } ] as const).map(t => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id as any)}
+            onClick={() => setTab(t.id)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
               tab === t.id ? 'bg-purple-700 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
             }`}

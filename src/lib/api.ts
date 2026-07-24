@@ -1,10 +1,9 @@
-const BRIDGE = process.env.NEXT_PUBLIC_BRIDGE_URL ?? 'https://cmd.dataintellagents.com';
-const TOKEN  = process.env.NEXT_PUBLIC_BRIDGE_TOKEN ?? '';
+const BRIDGE = '/api/bridge';
 
 async function req(path: string, opts: RequestInit = {}) {
   const res = await fetch(`${BRIDGE}${path}`, {
     ...opts,
-    headers: { 'X-Jarvis-Token': TOKEN, 'Content-Type': 'application/json', ...(opts.headers ?? {}) },
+    headers: { 'Content-Type': 'application/json', ...(opts.headers ?? {}) },
   });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return res.json();

@@ -137,7 +137,6 @@ export default function VoiceChat() {
       } catch {
         // Fallback: ScriptProcessorNode
         console.warn('AudioWorklet unavailable, using ScriptProcessor')
-        // @ts-ignore
         const sp = ctx.createScriptProcessor(2048, 1, 1)
         sp.onaudioprocess = (e: AudioProcessingEvent) => {
           accBuf.push(e.inputBuffer.getChannelData(0).slice())

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Activity, Cpu, Radio, ShieldCheck, RefreshCw, Mic, Zap, Brain, Settings, RotateCcw, LogOut } from 'lucide-react';
+import { Cpu, Radio, ShieldCheck, RefreshCw, Mic, Zap, Brain, Settings, RotateCcw, LogOut } from 'lucide-react';
 import { api } from '@/lib/api';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -34,9 +34,21 @@ const SERVICE_LABELS: Record<string, string> = {
   'hindsight-embed.service': 'Memory (Hindsight)',
 };
 
+type HardwareStatus = {
+  gpus: Array<{ name: string; used_mb: number; total_mb: number }>;
+  cpu_usage_percent: number;
+  ram: { used_gb: number; free_gb: number };
+};
+
+type ServicesStatus = { services: Array<{ name: string; active: boolean }> };
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export default function Dashboard() {
-  const [hw, setHw] = useState<any>(null);
-  const [svcs, setSvcs] = useState<any>(null);
+  const [hw, setHw] = useState<HardwareStatus | null>(null);
+  const [svcs, setSvcs] = useState<ServicesStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [ttsMode, setTtsMode] = useState<'base' | 'custom'>('custom');
@@ -59,17 +71,17 @@ export default function Dashboard() {
       setHw(hwData);
       setSvcs(svcData);
       setError(null);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(errorMessage(e));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    refresh();
+    const initial = setTimeout(() => { void refresh(); }, 0);
     const t = setInterval(refresh, 10000);
-    return () => clearInterval(t);
+    return () => { clearTimeout(initial); clearInterval(t); };
   }, [refresh]);
 
   const handleTts = async (mode: 'base' | 'custom') => {
@@ -88,7 +100,7 @@ export default function Dashboard() {
       await api.envUpdate(envKey, envVal);
       setEnvMsg(`Set ${envKey} ✓`);
       setTimeout(() => setEnvMsg(''), 3000);
-    } catch (e: any) { setEnvMsg(`Error: ${e.message}`); }
+    } catch (e: unknown) { setEnvMsg(`Error: ${errorMessage(e)}`); }
   };
 
   if (loading) return (
@@ -134,7 +146,7 @@ export default function Dashboard() {
           </div>
           {hw ? (
             <div className="space-y-4">
-              {hw.gpus?.map((g: any, i: number) => (
+              {hw.gpus?.map((g, i: number) => (
                 <GpuBar key={i} name={`GPU${i}: ${g.name}`} used={g.used_mb} total={g.total_mb} />
               ))}
               <div className="pt-3 border-t border-zinc-800 grid grid-cols-3 gap-4 text-center">
@@ -162,7 +174,7 @@ export default function Dashboard() {
             <span className="text-xs font-semibold uppercase tracking-widest">Services</span>
           </div>
           <div className="space-y-3">
-            {svcs?.services?.map((s: any) => (
+            {svcs?.services?.map((s) => (
               <div key={s.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <StatusDot active={s.active} />
@@ -293,7 +305,22 @@ export default function Dashboard() {
           </div>
           <div>
             <p className="text-sm font-semibold text-indigo-300">GPU1 Smart Model</p>
-            <p className="text-xs text-zinc-500 mt-0.5">Hot-swap Gemma 4 26B ↔ Qwen 3.6 27B · crash recovery · port 8081</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Four-profile Qwen/Gemma dense + MoE hot-swap · rollback · port 8081</p>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto text-zinc-600 group-hover:text-zinc-400 transition-colors"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+
+        {/* Creative Studio */}
+        <a
+          href="/creative"
+          className="flex items-center gap-3 p-5 bg-zinc-900 border border-fuchsia-900/50 hover:border-fuchsia-700 rounded-2xl transition-all group"
+        >
+          <div className="p-2 bg-fuchsia-900/30 rounded-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-fuchsia-400"><path d="m12 3-1.9 4.7L5 9.6l4.1 3.1L7.8 18 12 15l4.2 3-1.3-5.3L19 9.6l-5.1-1.9Z"/></svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-fuchsia-300">Creative Studio</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Voice ↔ Creative mode · FLUX.2 images · Qwen editing · Wan2.2 video</p>
           </div>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto text-zinc-600 group-hover:text-zinc-400 transition-colors"><path d="m9 18 6-6-6-6"/></svg>
         </a>

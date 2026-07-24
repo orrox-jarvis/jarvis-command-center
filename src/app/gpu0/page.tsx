@@ -1,8 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 
-const BRIDGE = process.env.NEXT_PUBLIC_BRIDGE_URL || 'https://cmd.dataintellagents.com';
+const BRIDGE = '/api/bridge';
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -229,7 +234,7 @@ function LogDrawer({ svcKey, onClose }: { svcKey: string; onClose: () => void })
   useEffect(() => {
     apiFetch(`/status/gpu0_logs?service=${encodeURIComponent(svcKey)}&lines=60`)
       .then((d) => setLogs(d.logs || '(no logs)'))
-      .catch((e) => setLogs(`Error: ${e.message}`));
+      .catch((e) => setLogs(`Error: ${errorMessage(e)}`));
   }, [svcKey]);
 
   return (
@@ -274,17 +279,17 @@ export default function Gpu0Page() {
       const data = await apiFetch('/status/gpu0');
       setStatus(data);
       setError(null);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(errorMessage(e));
     } finally {
       if (!quiet) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    refresh();
+    const initial = setTimeout(() => { void refresh(); }, 0);
     const t = setInterval(() => refresh(true), 8000);
-    return () => clearInterval(t);
+    return () => { clearTimeout(initial); clearInterval(t); };
   }, [refresh]);
 
   const handleRestart = async (svc: string) => {
@@ -296,8 +301,8 @@ export default function Gpu0Page() {
       });
       showToast(`Restarting ${status?.[svc]?.label ?? svc}…`);
       setTimeout(() => refresh(true), 3000);
-    } catch (e: any) {
-      showToast(e.message, false);
+    } catch (e: unknown) {
+      showToast(errorMessage(e), false);
     } finally {
       setBusy(null);
     }
@@ -313,8 +318,8 @@ export default function Gpu0Page() {
       });
       showToast(`Stopped ${status?.[svc]?.label ?? svc}.`);
       setTimeout(() => refresh(true), 2000);
-    } catch (e: any) {
-      showToast(e.message, false);
+    } catch (e: unknown) {
+      showToast(errorMessage(e), false);
     } finally {
       setBusy(null);
     }
@@ -372,12 +377,12 @@ export default function Gpu0Page() {
           >
             ↻ Refresh
           </button>
-          <a
+          <Link
             href="/"
             className="px-4 py-1.5 rounded-lg text-sm bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-400"
           >
             ← Dashboard
-          </a>
+          </Link>
         </div>
       </div>
 

@@ -34,7 +34,7 @@ export function decodeMulaw(byte: number): number {
   const sign      = byte & 0x80
   const exponent  = (byte >> 4) & 0x07
   const mantissa  = byte & 0x0f
-  let magnitude   = ((mantissa << 3) + BIAS) << exponent
+  const magnitude = ((mantissa << 3) + BIAS) << exponent
   return sign !== 0 ? -magnitude : magnitude
 }
 
