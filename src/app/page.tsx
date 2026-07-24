@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Cpu, Radio, ShieldCheck, RefreshCw, Mic, Zap, Brain, Settings, RotateCcw, LogOut } from 'lucide-react';
 import { api } from '@/lib/api';
-import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 function GpuBar({ used, total, name }: { used: number; total: number; name: string }) {
@@ -58,11 +57,11 @@ export default function Dashboard() {
   const [envVal, setEnvVal] = useState('');
   const [envMsg, setEnvMsg] = useState('');
   const router = useRouter();
-  const supabase = createClient();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
+    router.refresh();
   };
 
   const refresh = useCallback(async () => {

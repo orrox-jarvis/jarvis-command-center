@@ -1,24 +1,12 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { SESSION_COOKIE, verifySessionToken } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() { /* Session refresh is handled by middleware. */ },
-      },
-    },
-  )
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+  const session = await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value)
+  if (!session) return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 })
 
   const token = process.env.BRIDGE_TOKEN
   const base = process.env.BRIDGE_URL
