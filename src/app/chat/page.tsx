@@ -83,12 +83,17 @@ export default function ChatPage() {
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [loadingChat, setLoadingChat] = useState(false);
+  const [chatsLoading, setChatsLoading] = useState(true);
+  const [chatsLoadError, setChatsLoadError] = useState<string | null>(null);
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const openRequestRef = useRef(0);
+  const deleteRequestRef = useRef(false);
 
   const refreshStatus = useCallback(async () => {
     const next = await apiFetch('/status/gpu1_model') as Gpu1Status;
@@ -97,9 +102,18 @@ export default function ChatPage() {
   }, []);
 
   const refreshChats = useCallback(async () => {
-    const result = await apiFetch('/chats') as { chats: ChatSummary[] };
-    setChats(result.chats);
-    return result.chats;
+    setChatsLoading(true);
+    setChatsLoadError(null);
+    try {
+      const result = await apiFetch('/chats') as { chats: ChatSummary[] };
+      setChats(result.chats);
+      return result.chats;
+    } catch (err) {
+      setChatsLoadError(errorMessage(err));
+      throw err;
+    } finally {
+      setChatsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -148,11 +162,13 @@ export default function ChatPage() {
   };
 
   const openChat = async (chatId: string) => {
-    if (sending || switching || loadingChat) return;
+    if (sending || switching || loadingChat || deletingChatId) return;
+    const requestId = ++openRequestRef.current;
     setLoadingChat(true);
     setError(null);
     try {
       const stored = await apiFetch(`/chats/${chatId}`) as StoredChat;
+      if (requestId !== openRequestRef.current) return;
       setCurrentChatId(stored.id);
       setMessages(stored.messages.map((message) => ({
         id: message.id,
@@ -165,28 +181,34 @@ export default function ChatPage() {
       // The existing model button remains the explicit control for loading this profile.
       setSelectedModel(stored.model);
     } catch (err) {
-      setError(errorMessage(err));
+      if (requestId === openRequestRef.current) setError(errorMessage(err));
     } finally {
-      setLoadingChat(false);
+      if (requestId === openRequestRef.current) setLoadingChat(false);
     }
   };
 
   const deleteChat = async (chatId: string) => {
+    if (deleteRequestRef.current) return;
     const chat = chats.find((item) => item.id === chatId);
     if (!window.confirm(`Delete “${chat?.title || 'this conversation'}”?`)) return;
+    deleteRequestRef.current = true;
+    setDeletingChatId(chatId);
     try {
       await apiFetch(`/chats/${chatId}`, { method: 'DELETE' });
       if (currentChatId === chatId) newConversation();
       await refreshChats();
     } catch (err) {
       setError(errorMessage(err));
+    } finally {
+      deleteRequestRef.current = false;
+      setDeletingChatId(null);
     }
   };
 
   const sendMessage = async (event?: FormEvent) => {
     event?.preventDefault();
     const text = input.trim();
-    if (!text || sending || switching || loadingChat) return;
+    if (!text || sending || switching || loadingChat || deletingChatId) return;
     if (!status?.responding || status.active_model !== selectedModel) {
       setError('Wait for the selected model to finish loading before sending.');
       return;
@@ -279,7 +301,7 @@ export default function ChatPage() {
                 <button
                   key={model}
                   onClick={() => void chooseModel(model)}
-                  disabled={switching || sending}
+                  disabled={switching || sending || !!deletingChatId}
                   className={`text-left rounded-xl border p-3 transition-all disabled:opacity-50 ${selected ? info.accent : 'border-slate-800 bg-slate-900/60 hover:border-slate-600'}`}
                 >
                   <div className="flex items-center gap-2">
@@ -305,7 +327,7 @@ export default function ChatPage() {
 
           <button
             onClick={newConversation}
-            disabled={(!currentChatId && !messages.length) || sending || switching || loadingChat}
+            disabled={(!currentChatId && !messages.length) || sending || switching || loadingChat || !!deletingChatId}
             className="mt-3 w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 py-2.5 text-xs font-medium text-white disabled:bg-slate-800 disabled:text-slate-500 transition-colors"
           >
             <MessageSquarePlus size={14} /> New conversation
@@ -317,12 +339,19 @@ export default function ChatPage() {
               {chats.length > 0 && <span className="ml-auto text-[10px] text-slate-600">{chats.length}</span>}
             </div>
             <div className="max-h-52 lg:max-h-[30vh] overflow-y-auto space-y-1 pr-1">
-              {!chats.length && <p className="py-3 text-xs text-slate-600 text-center">No saved conversations yet</p>}
+              {chatsLoading && <p className="py-3 text-xs text-slate-600 text-center">Loading conversations…</p>}
+              {!chatsLoading && chatsLoadError && (
+                <div className="py-3 text-center">
+                  <p className="text-xs text-rose-400">Could not load conversations</p>
+                  <button onClick={() => void refreshChats()} className="mt-2 text-xs text-indigo-400 hover:text-indigo-300">Try again</button>
+                </div>
+              )}
+              {!chatsLoading && !chatsLoadError && !chats.length && <p className="py-3 text-xs text-slate-600 text-center">No saved conversations yet</p>}
               {chats.map((chat) => (
                 <div key={chat.id} className={`group flex items-center rounded-lg border ${currentChatId === chat.id ? 'border-indigo-600 bg-indigo-500/10' : 'border-transparent hover:bg-slate-900'}`}>
                   <button
                     onClick={() => void openChat(chat.id)}
-                    disabled={sending || switching || loadingChat}
+                    disabled={sending || switching || loadingChat || !!deletingChatId}
                     title={chat.preview}
                     className="min-w-0 flex-1 text-left px-3 py-2 disabled:opacity-50"
                   >
@@ -336,11 +365,11 @@ export default function ChatPage() {
                   </button>
                   <button
                     onClick={() => void deleteChat(chat.id)}
-                    disabled={sending || switching || loadingChat}
+                    disabled={sending || switching || loadingChat || !!deletingChatId}
                     aria-label={`Delete ${chat.title}`}
-                    className="shrink-0 mr-2 p-1.5 rounded-md text-slate-700 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-rose-400 hover:bg-rose-500/10"
+                    className="shrink-0 mr-2 p-1.5 rounded-md text-slate-500 opacity-100 lg:text-slate-700 lg:opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-rose-400 hover:bg-rose-500/10"
                   >
-                    <Trash2 size={13} />
+                    {deletingChatId === chat.id ? <LoaderCircle size={13} className="animate-spin" /> : <Trash2 size={13} />}
                   </button>
                 </div>
               ))}
@@ -405,11 +434,11 @@ export default function ChatPage() {
                   onChange={(event) => setInput(event.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={loadingChat ? 'Loading conversation…' : modelReady ? `Message ${MODELS[selectedModel].short}…` : 'Waiting for model…'}
-                  disabled={!modelReady || sending || switching || loadingChat}
+                  disabled={!modelReady || sending || switching || loadingChat || !!deletingChatId}
                   rows={3}
                   className="w-full resize-none bg-transparent px-4 py-3 pr-14 text-sm text-white placeholder:text-slate-600 outline-none disabled:opacity-50"
                 />
-                <button type="submit" disabled={!input.trim() || !modelReady || sending || switching || loadingChat} aria-label="Send message" className="absolute right-3 bottom-3 w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 flex items-center justify-center transition-colors">
+                <button type="submit" disabled={!input.trim() || !modelReady || sending || switching || loadingChat || !!deletingChatId} aria-label="Send message" className="absolute right-3 bottom-3 w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 flex items-center justify-center transition-colors">
                   {sending ? <LoaderCircle size={17} className="animate-spin" /> : <Send size={17} />}
                 </button>
               </div>
