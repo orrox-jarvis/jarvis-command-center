@@ -161,7 +161,9 @@ export default function ChatPage() {
         model: message.model || undefined,
       })));
       setInput('');
-      await chooseModel(stored.model);
+      // Restoring history must not churn GPU1 just because the user is browsing chats.
+      // The existing model button remains the explicit control for loading this profile.
+      setSelectedModel(stored.model);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -212,8 +214,16 @@ export default function ChatPage() {
       setMessages((current) => [...current, {
         id: crypto.randomUUID(), role: 'assistant', content: response.content, model: response.profile,
       }]);
-      await refreshChats();
+      try {
+        await refreshChats();
+      } catch (refreshError) {
+        setError(`Reply saved, but the chat list could not refresh: ${errorMessage(refreshError)}`);
+      }
     } catch (err) {
+      // The bridge only persists completed user/assistant pairs. Roll back the
+      // optimistic user bubble so the visible and durable transcripts cannot diverge.
+      setMessages((current) => current.filter((message) => message.id !== userMessage.id));
+      setInput(text);
       setError(errorMessage(err));
     } finally {
       setSending(false);
